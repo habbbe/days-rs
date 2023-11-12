@@ -4,7 +4,6 @@ use std::env;
 use std::process::exit;
 
 const DATE_ARG: &str = "DATE|now|today|tomorrow|...";
-const UNTIL: &str = "until ";
 
 fn print_help() {
     let cmd = env::args().next().unwrap();
@@ -39,27 +38,19 @@ fn main() {
     let parse_date =
         |s, error_msg| parse_date_string(s, now, Dialect::Uk).unwrap_or_else(|_| error(error_msg));
 
-    let until_idx = cmd_line
-        .find(UNTIL)
+    let (start, end) = cmd_line
+        .split_once("until ")
+        .filter(|(start, _)| start.is_empty() || start.ends_with(|c: char| c.is_whitespace()))
         .unwrap_or_else(|| error("Invalid syntax"));
 
-    let start_date = if until_idx > 0 {
-        if !cmd_line[..until_idx].ends_with(|c: char| c.is_whitespace()) {
-            error("Invalid syntax");
-        };
-
-        parse_date(&cmd_line[..until_idx], "Invalid start date")
-    } else {
-        now
-    };
-
-    let end_date = parse_date(&cmd_line[until_idx + UNTIL.len()..], "Invalid end date");
+    let start_date = if start.is_empty() { now } else { parse_date(start, "Invalid start date") };
+    let end_date = parse_date(end, "Invalid end date");
 
     let diff = end_date - start_date;
     let neg = if diff < Duration::zero() { "-" } else { "" };
-    let days = chrono::Duration::days(diff.num_days());
-    let hours = chrono::Duration::hours((diff - days).num_hours());
-    let minutes = chrono::Duration::minutes((diff - days - hours).num_minutes());
+    let days = Duration::days(diff.num_days());
+    let hours = Duration::hours((diff - days).num_hours());
+    let minutes = Duration::minutes((diff - days - hours).num_minutes());
     let seconds = (diff - days - hours - minutes).num_seconds();
 
     println!(
