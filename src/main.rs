@@ -46,19 +46,13 @@ fn main() {
     let start_date = if start.is_empty() { now } else { parse_date(start, "Invalid start date") };
     let end_date = parse_date(end, "Invalid end date");
 
-    let diff = end_date - start_date;
-    let neg = if diff < Duration::zero() { "-" } else { "" };
-    let days = Duration::days(diff.num_days());
-    let hours = Duration::hours((diff - days).num_hours());
-    let minutes = Duration::minutes((diff - days - hours).num_minutes());
-    let seconds = (diff - days - hours - minutes).num_seconds();
+    let diff = end_date.signed_duration_since(start_date);
+    let sign = if diff < Duration::zero() { "-" } else { "" };
+    let diff = diff.abs();
+    let days = diff.num_days();
+    let hours = diff.num_hours() % 24;
+    let minutes = diff.num_minutes() % 60;
+    let seconds = diff.num_seconds() % 60;
 
-    println!(
-        "{}{} days, {:02}:{:02}:{:02}",
-        neg,
-        days.num_days().abs(),
-        hours.num_hours().abs(),
-        minutes.num_minutes().abs(),
-        seconds.abs(),
-    );
+    println!("{}{} days, {:02}:{:02}:{:02}", sign, days, hours, minutes, seconds);
 }
